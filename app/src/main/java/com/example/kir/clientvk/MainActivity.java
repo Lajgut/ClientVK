@@ -1,9 +1,7 @@
 package com.example.kir.clientvk;
 
 import android.app.Activity;
-import android.content.ClipData;
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -21,8 +19,10 @@ import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKParameters;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
-import com.vk.sdk.api.model.VKApiGetMessagesResponse;
-import com.vk.sdk.api.model.VKApiMessage;
+import com.vk.sdk.api.methods.VKApiUsers;
+import com.vk.sdk.api.model.VKApiDialog;
+import com.vk.sdk.api.model.VKApiGetDialogResponse;
+import com.vk.sdk.api.model.VKApiUser;
 import com.vk.sdk.api.model.VKList;
 
 import java.util.ArrayList;
@@ -37,8 +37,6 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //String[] fingerprints = VKUtil.getCertificateFingerprint(this, this.getPackageName());
-        //System.out.println(Arrays.asList(fingerprints));
 
         VKSdk.login(this, scope);
         lv = (ListView) findViewById(R.id.lv);
@@ -47,25 +45,26 @@ public class MainActivity extends Activity {
             @Override
             public void onClick(View view) {
 
-                VKRequest request = VKApi.messages().get(VKParameters.from(VKApiConst.COUNT,10));
+                final VKRequest request = VKApi.messages().getDialogs(VKParameters.from(VKApiConst.COUNT,10));
                 request.executeWithListener(new VKRequest.VKRequestListener() {
                     @Override
                     public void onComplete(VKResponse response) {
                         super.onComplete(response);
 
-                        VKApiGetMessagesResponse getMessagesResponse = (VKApiGetMessagesResponse) response.parsedModel;
+                        VKApiGetDialogResponse getDialogResponse = (VKApiGetDialogResponse) response.parsedModel;
 
-                        VKList<VKApiMessage> list = getMessagesResponse.items;
+                        VKList<VKApiDialog> list = getDialogResponse.items;
 
-                        ArrayList<String> arrayList = new ArrayList<String>();
+                        ArrayList<String> messages = new ArrayList<>();
+                        ArrayList<String> usersList = new ArrayList<>();
 
-                        for (VKApiMessage message : list){
-                            arrayList.add(message.body);
+                        for (VKApiDialog msg : list){
+                            usersList.add(String.valueOf(msg.message.user_id));
+                            messages.add(msg.message.body);
                         }
 
-                        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(MainActivity.this, android.R.layout.simple_list_item_1,arrayList);
+                        lv.setAdapter(new CustomAdapter(MainActivity.this,usersList,messages,list));
 
-                        lv.setAdapter(arrayAdapter);
                     }
                 });
             }
